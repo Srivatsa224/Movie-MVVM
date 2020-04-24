@@ -1,5 +1,6 @@
 package com.srivatsa.moviemvvm.data.repository
 
+import android.util.Log
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import com.srivatsa.moviemvvm.data.api.TheMovieDBInterface
@@ -9,39 +10,43 @@ import io.reactivex.disposables.CompositeDisposable
 import io.reactivex.schedulers.Schedulers
 import java.lang.Exception
 
-class MovieDetailsNetworkDataSource(private val apiService:TheMovieDBInterface,
-                                    private val compositeDesposable:CompositeDisposable)
-{
-    private val _newtworkstate= MutableLiveData<NetworkState>()
-    val newtworkstate:LiveData<NetworkState>
-    get() = _newtworkstate
+class MovieDetailsNetworkDataSource (private val apiService : TheMovieDBInterface, private val compositeDisposable: CompositeDisposable) {
 
-    private val _downloadedMovieDetailsResponse= MutableLiveData<MovieDetails>()
-    val downloadedMovieDetailsResponse:LiveData<MovieDetails>
+    private val _networkState  = MutableLiveData<NetworkState>()
+    val networkState: LiveData<NetworkState>
+        get() = _networkState                   //with this get, no need to implement get function to get networkSate
+
+    private val _downloadedMovieDetailsResponse =  MutableLiveData<MovieDetails>()
+    val downloadedMovieResponse: LiveData<MovieDetails>
         get() = _downloadedMovieDetailsResponse
 
-    fun fetchMovieDetails(movieId:Int)
-    {
-        _newtworkstate.postValue(NetworkState.LOADING)
-        try {
-            compositeDesposable.add(
-            apiService.getMovieDetails(movieId))
-                .subscribeOn(Schedulers.io())
-                .subscribe(
+    fun fetchMovieDetails(movieId: Int) {
 
-                )
+        _networkState.postValue(NetworkState.LOADING)
+
+
+        try {
+            compositeDisposable.add(
+                apiService.getMovieDetails(movieId)
+                    .subscribeOn(Schedulers.io())
+                    .subscribe(
+                        {
+                            _downloadedMovieDetailsResponse.postValue(it)
+                            _networkState.postValue(NetworkState.LOADED)
+                        },
+                        {
+                            _networkState.postValue(NetworkState.ERROR)
+                            Log.e("MovieDetailsDataSource", it.message)
+                        }
+                    )
+            )
 
         }
-        catch (e:Exception)
-        {
 
+        catch (e: Exception){
+            Log.e("MovieDetailsDataSource",e.message)
         }
 
 
     }
-
-
-
-
-
 }
